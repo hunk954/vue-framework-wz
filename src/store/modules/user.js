@@ -1,6 +1,6 @@
-import { loginByEmail, logout, getInfo } from 'api/login';
+import { loginByEmail, logout, getInfo, login} from 'api/login';
 import Cookies from 'js-cookie';
-
+import axios from 'axios'
 const user = {
   state: {
     user: '',
@@ -63,19 +63,72 @@ const user = {
 
   actions: {
     // 邮箱登录
+    Login({commit}, userInfo){
+      console.log('userInfo: ', userInfo);
+      const account = userInfo.account.trim();
+      console.log('account: ', account);
+      axios({
+        method: 'POST',
+        url: 'http://localhost:9100/login',
+        data: {
+          account : account,
+          password: userInfo.password.trim()
+        },
+        transformRequest: [function(data){
+          let ret = '';
+          for (let it in data){
+            ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&';
+          }
+          return ret;
+        }]}).then(resp => {
+        console.log('resp:',resp);
+        Cookies.set('Admin-Token', resp.data.message);
+        commit('SET_TOKEN', resp.data.message);
+        commit('SET_EMAIL', account);
+      }).catch(err =>{
+        console.log('err',err)
+      });
+      // let url = 'localhost:9110';
+      // let request = new XMLHttpRequest();
+      // request.onload = function(){
+      //   if(request.status === 200){
+      //     console.log('response: ', request);
+      //   }
+      // }
+      // return new Promise(function(resolve, reject){
+      //   fetch({
+      //     url: 'localhost:9100/',
+      //     method: 'get'
+      //   }).then(resp => {
+      //     return resp;
+      //   }).then(json => {
+      //     console.log(json);
+      //   })
+        // login(account, userInfo.password).then(response => {
+        //   const data = response.data;
+        //   console.log('resp: ',response.data);
+        // })
+      // });
+    },
     LoginByEmail({ commit }, userInfo) {
-      const email = userInfo.email.trim();
+      const account = userInfo.account.trim();
       return new Promise((resolve, reject) => {
-        loginByEmail(email, userInfo.password).then(response => {
-          const data = response.data;
-          console.log(response.data);
-          Cookies.set('Admin-Token', response.data.token);
-          commit('SET_TOKEN', data.token);
-          commit('SET_EMAIL', email);
-          resolve();
-        }).catch(error => {
-          reject(error);
-        });
+        fetch({
+          url: 'localhost:9100',
+          method: 'get'
+        }).then(function(response){
+          console.log('resp: ', response);
+        })
+        // loginByEmail(account, userInfo.password).then(response => {
+        //   const data = response.data;
+        //   console.log(response.data);
+        //   Cookies.set('Admin-Token', response.data.token);
+        //   commit('SET_TOKEN', data.token);
+        //   commit('SET_EMAIL', account);
+        //   resolve();
+        // }).catch(error => {
+        //   reject(error);
+        // });
       });
     },
 

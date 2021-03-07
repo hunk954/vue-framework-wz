@@ -131,9 +131,21 @@
                 }
                 this.loading = true;
                 // 向后端请求查看是否发送正确
+                this.$store.dispatch('Login', this.loginForm).then(()=>{
+                    this.$Message.success('登录成功');
+                    this.$router.push({ path: '/' });
+                }).catch(err => {
+                    document.getElementById("loginTips").innerText = "账号或密码出错";
+                    this.$Message.error(err);
+
+                    console.log(err);
+                }).finally(()=>{
+                    this.loading = false;
+                })
+
                 // 如果发送错误：显示密码有误
-                document.getElementById("loginTips").innerText = "账号或密码出错";
-                this.loading = false;
+
+                // this.loading = false;
                 // let that = this;
                 // setTimeout(function(){
                 //     that.loading = false;

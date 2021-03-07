@@ -28,8 +28,10 @@ const userMap = {
 
 export default {
   loginByEmail: config => {
-    const { email } = JSON.parse(config.body);
-      return userMap[email.split('@')[0]];
+    console.log('config: ', config);
+    return 'hello3';
+    // const { email } = JSON.parse(config.body);
+    //   return userMap[email.split('@')[0]];
   },
   getInfo: config => {
     const { token } = param2Obj(config.url);

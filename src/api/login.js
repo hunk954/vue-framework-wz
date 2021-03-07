@@ -27,3 +27,11 @@ export function getInfo(token) {
   });
 }
 
+export function login(account, password){
+  const data = {account, password};
+  return fetch({
+    url: '/login/loginbyemail',
+    method: 'post',
+    data
+  });
+}
