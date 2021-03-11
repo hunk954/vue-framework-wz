@@ -52,7 +52,7 @@
           };
           return {
               loginForm: {
-                  account: 'admin@wz.com',
+                  account: '415391519@qq.com',
                   password: ''
               },
               loginRules: {
@@ -131,27 +131,21 @@
                 }
                 this.loading = true;
                 // 向后端请求查看是否发送正确
-                this.$store.dispatch('Login', this.loginForm).then(()=>{
-                    this.$Message.success('登录成功');
-                    this.$router.push({ path: '/' });
+                this.$store.dispatch('Login', this.loginForm).then(resp=>{
+                    console.log("前端看看: ", resp);
+                    if(resp.data.status !== 0){
+                        document.getElementById("loginTips").innerText = "账号或密码出错";
+                    }else{
+                        this.$Message.success('登录成功');
+                        this.$router.push({ path: '/' });
+                    }
                 }).catch(err => {
-                    document.getElementById("loginTips").innerText = "账号或密码出错";
+                    document.getElementById("loginTips").innerText = "网络出错";
                     this.$Message.error(err);
-
-                    console.log(err);
+                    console.log('err:', err);
                 }).finally(()=>{
                     this.loading = false;
                 })
-
-                // 如果发送错误：显示密码有误
-
-                // this.loading = false;
-                // let that = this;
-                // setTimeout(function(){
-                //     that.loading = false;
-                // }, 5000);
-                // token
-
 
                 // this.$refs.loginForm.validate(valid => {
                 //     if (valid) {

@@ -18,6 +18,11 @@
                 </Input>
 <!--                <span slot="label" style="color:rgb(170,170,170);">密码为6-18位数字、字母组合，需同时包含大小写字母。</span>-->
             </Form-item>
+            <Form-item prop="passwordAgain">
+                <Input type="password" v-model="registForm.passwordAgain" placeholder="再次输入密码" @keyup.enter.native="handleRegister" @focus="passwdFocus()">
+                    <Icon type="ios-locked-outline" slot="prepend"></Icon>
+                </Input>
+            </Form-item>
             <Form-item prop="email">
                 <Input id="emailInput" type="text" v-model="registForm.email" placeholder="绑定邮箱，也可用于登录" @keyup.enter.native="handleRegister">
                     <Icon type="ios-locked-outline" slot="prepend"></Icon>
@@ -77,6 +82,8 @@
                 }
             };
             const validateCode = (rule, value, callback) => {
+                console.log("this:", this);
+                console.log("xx验证码是:", this.verifyCodeFromBackEnd.value);
                 if(this.verifyCodeFromBackEnd.expireTime === 0){
                     callback("未获取邮箱验证码");
                 }
@@ -91,14 +98,23 @@
                 }else{
                     callback();
                 }
-
-
+            }
+            const validatePassAgain = (rule, value, callback)=>{
+                if(value !== this.registForm.password){
+                    callback("两次输入的密码不一致");
+                }else if(value.trim().length === 0){
+                    callback(new Error("密码为6-18位数字、字母组合，需同时包含大小写字母。"));
+                }
+                else{
+                    callback();
+                }
             }
             return {
                 registForm: {
                     account:"",
                     email: "",
                     password: "",
+                    passwordAgain: "",
                     verifyCode: "",
                 },
                 loginRules: {
@@ -106,6 +122,7 @@
                     email: [{ required: true, trigger: "blur", validator: validateEmail }],
                     password: [{ required: true, trigger: "blur", validator: validatePass }],
                     verifyCode: [{required: true, trigger: "blur", validator: validateCode}],
+                    passwordAgain: [{required: true, trigger: "blur", validator: validatePassAgain}],
                 },
                 loading: false,
                 showDialog: false,
@@ -159,7 +176,12 @@
         },
         created: function(){
             // 后端获取已注册邮箱列表
-            this.registeredEmailList.push('415391519@qq.com');
+            let that = this;
+            this.$store.dispatch('getRegistedEmail').then(resp=>{
+                console.log("getRegistedEmail: ", resp);
+                that.registeredEmailList = resp.data.emailArr;
+            })
+            // this.registeredEmailList.push('41539119@qq.com');
         },
         methods: {
             getValidateCode(){
@@ -168,38 +190,54 @@
                     this.$refs.registForm.validateField('email'); // 通过触发validate去显示错误
                     return;
                 }
-
-                let elementBtn = document.getElementById("validateCodeBtn");
-                // 保存原来的字体颜色和背景颜色
-                let oriBackgroundColor = elementBtn.style.backgroundColor;
-                let oriFontColor = elementBtn.style.color;
-                // 置不可按，改样式
-                this.validateCodeGetDisabled = true;
-                elementBtn.style.backgroundColor = "rgb(247, 247, 247)";
-                elementBtn.style.color = "rgb(200, 200, 200)";
-                // 置倒计时
-                let countdown = this.countDown;
-                elementBtn.innerText = countdown + "秒后重新获取";
-                let that = this;
-                function setValidateCodeTime(){
-                    countdown--;
-                    if(countdown <= 0){
-                        elementBtn.style.backgroundColor = oriBackgroundColor;
-                        elementBtn.style.color = oriFontColor;
-                        that.validateCodeGetDisabled = false;
-                        elementBtn.innerText = "获取验证码";
-                    }
-                    else{
-                        elementBtn.innerText = countdown+"秒后重新获取";
-                        setTimeout(setValidateCodeTime, 1000);
-                    }
-                }
-                setTimeout(setValidateCodeTime, 1000);
-
                 // 向后端获取验证码
-                this.verifyCodeFromBackEnd.value = '0044';
-                this.verifyCodeFromBackEnd.expireTime = (new Date()).valueOf() + this.verifyCodeExpire; // 30分钟过期
-                console.log("后端验证码为:0044");
+                let that = this;
+                // 再调一次获取已注册邮箱列表，以防止重复注册
+                this.$store.dispatch('getRegistedEmail').then(resp=>{
+                    that.registeredEmailList = resp.data.emailArr;
+                    if(that.registeredEmailList.indexOf(that.registForm.email) !== -1){
+                        that.$refs.registForm.validateField('email'); // 通过触发validate去显示错误
+                        return;
+                    }
+                    that.$store.dispatch('getEmailVerifyCode', this.registForm.email).then(resp=>{
+                        console.log("获取验证码: ", resp);
+                        if(!resp.hasOwnProperty("error")){
+                            that.verifyCodeFromBackEnd.value = resp.data.verifyCode;
+                            that.verifyCodeFromBackEnd.expireTime = (new Date()).valueOf() + that.verifyCodeExpire; // 30分钟过期
+                            let elementBtn = document.getElementById("validateCodeBtn");
+                            // 保存原来的字体颜色和背景颜色
+                            let oriBackgroundColor = elementBtn.style.backgroundColor;
+                            let oriFontColor = elementBtn.style.color;
+                            // 置不可按，改样式
+                            this.validateCodeGetDisabled = true;
+                            elementBtn.style.backgroundColor = "rgb(247, 247, 247)";;
+                            elementBtn.style.color = "rgb(200, 200, 200)";
+                            // 置倒计时
+                            let countdown = this.countDown;
+                            elementBtn.innerText = countdown + "秒后重新获取";
+                            function setValidateCodeTime(){
+                                countdown--;
+                                if(countdown <= 0){
+                                    elementBtn.style.backgroundColor = oriBackgroundColor;
+                                    elementBtn.style.color = oriFontColor;
+                                    that.validateCodeGetDisabled = false;
+                                    elementBtn.innerText = "获取验证码";
+                                }
+                                else{
+                                    elementBtn.innerText = countdown+"秒后重新获取";
+                                    setTimeout(setValidateCodeTime, 1000);
+                                }
+                            }
+                            setTimeout(setValidateCodeTime, 1000);
+                        }else{
+                            console.log("失败了");
+                        }
+                    }).catch(err=>{
+                        console.log("er:", err);
+                        console.log("网络出错");
+                    })
+                })
+
             },
             passwdFocus() {
                 console.log("focus");
@@ -214,6 +252,17 @@
                 if(false === validateRes){
                     return ;
                 }
+                let that = this;
+                this.$store.dispatch('registerRoleInfo',this.registForm).then(resp=>{
+                    console.log("注册个人信息：", resp);
+                    if(resp.data.status === 0){
+                        that.$router.push({path:"/"});
+                    }
+
+                })
+                console.log("信息全部验证通过");
+
+
                 // this.$router.push({ path: "/" });
                 // console.log("this.$refs: ", this.$refs);
                 // console.log("this.$refs.loginForm: ", this.$refs.loginForm);

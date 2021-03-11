@@ -11,8 +11,6 @@ const user = {
     auth_type: '',
     token: Cookies.get('Admin-Token'),
     name: '',
-    avatar: '',
-    introduction: '',
     roles: [],
     setting: {
       articlePlatform: []
@@ -35,9 +33,6 @@ const user = {
     SET_EMAIL: (state, email) => {
       state.email = email;
     },
-    SET_INTRODUCTION: (state, introduction) => {
-      state.introduction = introduction;
-    },
     SET_SETTING: (state, setting) => {
       state.setting = setting;
     },
@@ -46,9 +41,6 @@ const user = {
     },
     SET_NAME: (state, name) => {
       state.name = name;
-    },
-    SET_AVATAR: (state, avatar) => {
-      state.avatar = avatar;
     },
     SET_ROLES: (state, roles) => {
       state.roles = roles;
@@ -63,16 +55,16 @@ const user = {
 
   actions: {
     // 邮箱登录
-    Login({commit}, userInfo){
-      console.log('userInfo: ', userInfo);
-      const account = userInfo.account.trim();
-      console.log('account: ', account);
-      axios({
+    async Login({commit}, userInfo){
+      // console.log('userInfo: ', userInfo); // 就是account + password
+      // const account = userInfo.account.trim();
+      // console.log('account: ', account);
+      let resp = await axios({
         method: 'POST',
-        url: 'http://localhost:9100/login',
+        url: 'http://localhost:9105/login',
         data: {
-          account : account,
-          password: userInfo.password.trim()
+          account : userInfo.account.trim(),
+          password: userInfo.password.trim(),
         },
         transformRequest: [function(data){
           let ret = '';
@@ -80,35 +72,54 @@ const user = {
             ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&';
           }
           return ret;
-        }]}).then(resp => {
-        console.log('resp:',resp);
+        }]});
+      console.log("resp: ", resp);
+      if(resp.data.status === 0){
         Cookies.set('Admin-Token', resp.data.message);
-        commit('SET_TOKEN', resp.data.message);
-        commit('SET_EMAIL', account);
-      }).catch(err =>{
-        console.log('err',err)
-      });
-      // let url = 'localhost:9110';
-      // let request = new XMLHttpRequest();
-      // request.onload = function(){
-      //   if(request.status === 200){
-      //     console.log('response: ', request);
-      //   }
-      // }
-      // return new Promise(function(resolve, reject){
-      //   fetch({
-      //     url: 'localhost:9100/',
-      //     method: 'get'
-      //   }).then(resp => {
-      //     return resp;
-      //   }).then(json => {
-      //     console.log(json);
-      //   })
-        // login(account, userInfo.password).then(response => {
-        //   const data = response.data;
-        //   console.log('resp: ',response.data);
-        // })
-      // });
+        commit('SET_TOKEN', resp.data.token);
+        commit('SET_EMAIL', resp.data.email);
+      }
+      return resp;
+    },
+    async registerRoleInfo({commit}, userInfo){
+        let resp = await axios({
+          method: "POST",
+          url: "http://localhost:9105/registerRoleInfo",
+          data: {
+            account: userInfo.account.trim(),
+            password: userInfo.password.trim(),
+            email: userInfo.email.trim(),
+          },
+          transformRequest: [function(data){
+            let ret = '';
+            for (let it in data){
+              ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&';
+            }
+            return ret;
+          }]});
+        console.log("registerRoleInfo resp: ", resp);
+      let resp2 = await axios({
+        method: 'POST',
+        url: 'http://localhost:9105/login',
+        data: {
+          account : userInfo.account.trim(),
+          password: userInfo.password.trim(),
+        },
+        transformRequest: [function(data){
+          let ret = '';
+          for (let it in data){
+            ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&';
+          }
+          return ret;
+        }]});
+      console.log("login resp: ", resp2);
+      if(resp2.data.status === 0){
+        console.log("set token !!!:, ", resp2.data.token);
+        Cookies.set('Admin-Token', resp2.data.message);
+        commit('SET_TOKEN', resp2.data.token);
+        commit('SET_EMAIL', resp2.data.email);
+      }
+      return resp2;
     },
     LoginByEmail({ commit }, userInfo) {
       const account = userInfo.account.trim();
@@ -132,22 +143,69 @@ const user = {
       });
     },
 
-
+  async getEmailVerifyCode({commit, state}, email){
+      let resp = await axios({
+        method: 'POST',
+        url: 'http://localhost:9105/getEmailVerifyCode',
+        data: {
+          email: email
+        },
+        transformRequest: [function(data){
+          let ret = '';
+          for (let it in data){
+            ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&';
+          }
+          return ret;
+        }]});
+      return resp;
+  },
+    async getRegistedEmail(){
+      let resp = await axios({
+        method: 'POST',
+        url: 'http://localhost:9105/getRegistedEmail',
+        transformRequest: [function(data){
+          let ret = '';
+          for (let it in data){
+            ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&';
+          }
+          return ret;
+        }]});
+      return resp;
+    },
     // 获取用户信息
-    GetInfo({ commit, state }) {
-      return new Promise((resolve, reject) => {
-        getInfo(state.token).then(response => {
-          const data = response.data;
-          commit('SET_ROLES', data.role);
-          commit('SET_NAME', data.name);
-          commit('SET_AVATAR', data.avatar);
-          commit('SET_UID', data.uid);
-          commit('SET_INTRODUCTION', data.introduction);
-          resolve(response);
-        }).catch(error => {
-          reject(error);
-        });
-      });
+    async GetInfo({ commit, state }) {
+      console.log("state.token: ", Cookies.get('Admin-Token'))
+      let resp = await axios({
+        method: 'POST',
+        url: 'http://localhost:9105/getRoleInfo',
+        data: {
+          token: state.token
+        },
+        transformRequest: [function(data){
+          let ret = '';
+          for (let it in data){
+            ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&';
+          }
+          return ret;
+        }]});
+      const data = resp.data;
+      commit('SET_ROLES', ["admin"]);
+      commit('SET_NAME', data.name);
+      commit('SET_UID', data.uid);
+      return resp;
+      // return new Promise((resolve, reject) => {
+      //   getInfo(state.token).then(response => {
+      //     const data = response.data;
+      //     commit('SET_ROLES', data.role);
+      //     commit('SET_NAME', data.name);
+      //     commit('SET_AVATAR', data.avatar);
+      //     commit('SET_UID', data.uid);
+      //     commit('SET_INTRODUCTION', data.introduction);
+      //     resolve(response);
+      //   }).catch(error => {
+      //     reject(error);
+      //   });
+      // });
     },
 
     // 第三方验证登录
