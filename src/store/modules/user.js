@@ -80,10 +80,6 @@ const user = {
         commit('SET_TOKEN', resp.data.token);
         commit('SET_EMAIL', resp.data.email);
         commit('SET_NAME', resp.data.account);
-      }else{
-        commit('SET_TOKEN', '');
-        Cookies.remove('Admin-Token');
-        alert("has logout");
       }
       return resp;
     },
@@ -124,10 +120,6 @@ const user = {
         Cookies.set('Admin-Token', resp2.data.message);
         commit('SET_TOKEN', resp2.data.token);
         commit('SET_EMAIL', resp2.data.email);
-      }else{
-        commit('SET_TOKEN', '');
-        Cookies.remove('Admin-Token');
-        alert("has logout");
       }
       return resp2;
     },
@@ -203,7 +195,7 @@ const user = {
       if(data.status !== 0){
         commit('SET_TOKEN', '');
         Cookies.remove('Admin-Token');
-        alert("has logout");
+        alert("用户信息过期，或系统错误");
       }else {
         commit('SET_ROLES', ["admin"]);
         commit('SET_NAME', data.name);
