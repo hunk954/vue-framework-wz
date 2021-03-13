@@ -20,9 +20,7 @@
             <Button type="primary" @click="handleLogin('loginForm')" long :loading="loading">登录</Button>
             <br></br>
             <Button type="default" @click="gotoRegister()" long :disabled="loading">注册</Button>
-            <div class='tips'>admin账号为:admin@wz.com 密码123456</div>
-            <div class='tips'>editor账
-                    号:editor@wz.com 密码123456</div>
+            <div class='tips'>测试账号为: 415391519@qq.com 密码Junhuan123</div>
        </Form>
 
     </div>
@@ -136,6 +134,7 @@
                     if(resp.data.status !== 0){
                         document.getElementById("loginTips").innerText = "账号或密码出错";
                     }else{
+                        console.log("login token: ", this.$store.getters.token);
                         this.$Message.success('登录成功');
                         this.$router.push({ path: '/' });
                     }

@@ -80,7 +80,7 @@
                 <a href="javascript:void(0)">
            <span slot="button">
           <img src="static/img/avatars/tt.jfif" class="img-avatar" style="height:35px;" alt="o">
-          <span class="d-md-down-none" style="color:white;">{{name}}</span>
+          <span class="d-md-down-none" style="color:white;">{{userName}}</span>
           </span>
                 </a>
                 <Dropdown-menu slot="list">
@@ -124,13 +124,16 @@
     export default {
         data(){
             return{
-                name: this.$store.getters.name,
+                userName: this.$store.getters.name,
             }
         },
         name: 'header',
         components: {
             navbar,
 
+        },
+        created: function(){
+            console.log("header initialize : ", this.$store.getters);
         },
         methods: {
             Logout(e){

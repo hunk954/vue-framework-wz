@@ -75,9 +75,15 @@ const user = {
         }]});
       console.log("resp: ", resp);
       if(resp.data.status === 0){
-        Cookies.set('Admin-Token', resp.data.message);
+        console.log("trigger set token!: ", resp.data);
+        Cookies.set('Admin-Token', resp.data.token);
         commit('SET_TOKEN', resp.data.token);
         commit('SET_EMAIL', resp.data.email);
+        commit('SET_NAME', resp.data.account);
+      }else{
+        commit('SET_TOKEN', '');
+        Cookies.remove('Admin-Token');
+        alert("has logout");
       }
       return resp;
     },
@@ -118,6 +124,10 @@ const user = {
         Cookies.set('Admin-Token', resp2.data.message);
         commit('SET_TOKEN', resp2.data.token);
         commit('SET_EMAIL', resp2.data.email);
+      }else{
+        commit('SET_TOKEN', '');
+        Cookies.remove('Admin-Token');
+        alert("has logout");
       }
       return resp2;
     },
@@ -189,9 +199,16 @@ const user = {
           return ret;
         }]});
       const data = resp.data;
-      commit('SET_ROLES', ["admin"]);
-      commit('SET_NAME', data.name);
-      commit('SET_UID', data.uid);
+      console.log("getinfo data: ", data);
+      if(data.status !== 0){
+        commit('SET_TOKEN', '');
+        Cookies.remove('Admin-Token');
+        alert("has logout");
+      }else {
+        commit('SET_ROLES', ["admin"]);
+        commit('SET_NAME', data.name);
+        commit('SET_UID', data.uid);
+      }
       return resp;
       // return new Promise((resolve, reject) => {
       //   getInfo(state.token).then(response => {
@@ -242,7 +259,7 @@ const user = {
       return new Promise(resolve => {
         commit('SET_TOKEN', '');
         Cookies.remove('Admin-Token');
-        alert("has logout");
+        alert("用户信息过期，或系统错误");
         resolve();
       });
     },
