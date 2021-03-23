@@ -24,7 +24,7 @@
                         </el-option>
                     </el-select>
                     <div style="margin:20px;"></div>
-                    <el-button type="primary" icon="el-icon-thumb" size="small">开始实验</el-button>
+                    <el-button type="primary" icon="el-icon-thumb" size="small" @click="startExperiment" :disabled="startButtonDisabled">开始实验</el-button>
                     <!-- <p>Content of no border type. Content of no border type. Content of no border type. Content of no border type. </p> -->
                 </Card>
                 <!-- <h3>选择流量类型</h3>
@@ -92,6 +92,7 @@
     export default{
         data(){
             return{
+                startButtonDisabled: false,
                 option : {
                     backgroundColor: "#344b58",
                     "title": {
@@ -317,18 +318,18 @@
                 algorithmList:[
                     {
                         value: 0,
-                        label: 'static_scale'
+                        label: 'Threshold_scale'
                     },
                     {
                         value: 1,
                         label: 'Q-learning_scale'
                     },
-                    {
-                        value: 2,
-                        label: 'Armia-Predict_scale'
-                    }
+                    // {
+                    //     value: 2,
+                    //     label: 'Armia-Predict_scale'
+                    // }
                 ],
-                waveValue: null,
+                waveValue: 0,
                 waveList:[
                     {
                         value: 0,
@@ -356,6 +357,36 @@
                     },
                 ]
             }
-        }
+        },
+        methods:{
+            startExperiment(){
+                this.startButtonDisabled = true;
+                console.log("开始实验");
+                console.log("算法类型", this.algorithmValue);
+                console.log("流量类型", this.waveValue);
+                if(this.algorithmValue === ""){
+                    this.$message({
+                        type: "error",
+                        message: "未选择算法类型"
+                    })
+                    return;
+                }
+                if(this.waveValue === ""){
+                    this.$message({
+                        type: "error",
+                        message: "未选择流量类型"
+                    })
+                    return;
+                }
+                let that = this;
+                this.$store.dispatch('startExperiment', {algorithm: this.algorithmValue, wave: this.waveValue}).then(resp=>{
+                    console.log("startExperiment resp: ", resp);
+                    if(resp.data.status === 0){
+                        
+                    }
+                    that.startButtonDisabled = false;
+                })
+            }
+        }   
     }
 </script>

@@ -192,6 +192,7 @@
                 }
                 // 向后端获取验证码
                 let that = this;
+
                 // 再调一次获取已注册邮箱列表，以防止重复注册
                 this.$store.dispatch('getRegistedEmail').then(resp=>{
                     that.registeredEmailList = resp.data.emailArr;
@@ -199,36 +200,37 @@
                         that.$refs.registForm.validateField('email'); // 通过触发validate去显示错误
                         return;
                     }
+                    let elementBtn = document.getElementById("validateCodeBtn");
+                    // 保存原来的字体颜色和背景颜色
+                    let oriBackgroundColor = elementBtn.style.backgroundColor;
+                    let oriFontColor = elementBtn.style.color;
+                    // 置不可按，改样式
+                    this.validateCodeGetDisabled = true;
+                    elementBtn.style.backgroundColor = "rgb(247, 247, 247)";;
+                    elementBtn.style.color = "rgb(200, 200, 200)";
+                    // 置倒计时
+                    let countdown = this.countDown;
+                    elementBtn.innerText = countdown + "秒后重新获取";
+                    function setValidateCodeTime(){
+                        countdown--;
+                        if(countdown <= 0){
+                            elementBtn.style.backgroundColor = oriBackgroundColor;
+                            elementBtn.style.color = oriFontColor;
+                            that.validateCodeGetDisabled = false;
+                            elementBtn.innerText = "获取验证码";
+                        }
+                        else{
+                            elementBtn.innerText = countdown+"秒后重新获取";
+                            setTimeout(setValidateCodeTime, 1000);
+                        }
+                    }
+                    setTimeout(setValidateCodeTime, 1000);
                     that.$store.dispatch('getEmailVerifyCode', this.registForm.email).then(resp=>{
                         console.log("获取验证码: ", resp);
                         if(!resp.hasOwnProperty("error")){
                             that.verifyCodeFromBackEnd.value = resp.data.verifyCode;
                             that.verifyCodeFromBackEnd.expireTime = (new Date()).valueOf() + that.verifyCodeExpire; // 30分钟过期
-                            let elementBtn = document.getElementById("validateCodeBtn");
-                            // 保存原来的字体颜色和背景颜色
-                            let oriBackgroundColor = elementBtn.style.backgroundColor;
-                            let oriFontColor = elementBtn.style.color;
-                            // 置不可按，改样式
-                            this.validateCodeGetDisabled = true;
-                            elementBtn.style.backgroundColor = "rgb(247, 247, 247)";;
-                            elementBtn.style.color = "rgb(200, 200, 200)";
-                            // 置倒计时
-                            let countdown = this.countDown;
-                            elementBtn.innerText = countdown + "秒后重新获取";
-                            function setValidateCodeTime(){
-                                countdown--;
-                                if(countdown <= 0){
-                                    elementBtn.style.backgroundColor = oriBackgroundColor;
-                                    elementBtn.style.color = oriFontColor;
-                                    that.validateCodeGetDisabled = false;
-                                    elementBtn.innerText = "获取验证码";
-                                }
-                                else{
-                                    elementBtn.innerText = countdown+"秒后重新获取";
-                                    setTimeout(setValidateCodeTime, 1000);
-                                }
-                            }
-                            setTimeout(setValidateCodeTime, 1000);
+                            
                         }else{
                             console.log("失败了");
                         }

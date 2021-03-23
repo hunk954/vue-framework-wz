@@ -1,6 +1,10 @@
 import { loginByEmail, logout, getInfo, login} from 'api/login';
 import Cookies from 'js-cookie';
 import axios from 'axios'
+
+var serverIP = "172.16.33.50"
+var serverPort = "9105"
+var serverUrl = "http://" + serverIP + ":" + serverPort;
 const user = {
   state: {
     user: '',
@@ -61,7 +65,7 @@ const user = {
       // console.log('account: ', account);
       let resp = await axios({
         method: 'POST',
-        url: 'http://localhost:9105/login',
+        url: serverUrl+'/login',
         data: {
           account : userInfo.account.trim(),
           password: userInfo.password.trim(),
@@ -86,7 +90,7 @@ const user = {
     async registerRoleInfo({commit}, userInfo){
         let resp = await axios({
           method: "POST",
-          url: "http://localhost:9105/registerRoleInfo",
+          url: serverUrl+"/registerRoleInfo",
           data: {
             account: userInfo.account.trim(),
             password: userInfo.password.trim(),
@@ -102,7 +106,7 @@ const user = {
         console.log("registerRoleInfo resp: ", resp);
       let resp2 = await axios({
         method: 'POST',
-        url: 'http://localhost:9105/login',
+        url: serverUrl+'/login',
         data: {
           account : userInfo.account.trim(),
           password: userInfo.password.trim(),
@@ -123,32 +127,10 @@ const user = {
       }
       return resp2;
     },
-    LoginByEmail({ commit }, userInfo) {
-      const account = userInfo.account.trim();
-      return new Promise((resolve, reject) => {
-        fetch({
-          url: 'localhost:9100',
-          method: 'get'
-        }).then(function(response){
-          console.log('resp: ', response);
-        })
-        // loginByEmail(account, userInfo.password).then(response => {
-        //   const data = response.data;
-        //   console.log(response.data);
-        //   Cookies.set('Admin-Token', response.data.token);
-        //   commit('SET_TOKEN', data.token);
-        //   commit('SET_EMAIL', account);
-        //   resolve();
-        // }).catch(error => {
-        //   reject(error);
-        // });
-      });
-    },
-
   async getEmailVerifyCode({commit, state}, email){
       let resp = await axios({
         method: 'POST',
-        url: 'http://localhost:9105/getEmailVerifyCode',
+        url: serverUrl+'/getEmailVerifyCode',
         data: {
           email: email
         },
@@ -164,7 +146,7 @@ const user = {
     async getRegistedEmail(){
       let resp = await axios({
         method: 'POST',
-        url: 'http://localhost:9105/getRegistedEmail',
+        url: serverUrl+'/getRegistedEmail',
         transformRequest: [function(data){
           let ret = '';
           for (let it in data){
@@ -179,7 +161,7 @@ const user = {
       console.log("state.token: ", Cookies.get('Admin-Token'))
       let resp = await axios({
         method: 'POST',
-        url: 'http://localhost:9105/getRoleInfo',
+        url: serverUrl+'/getRoleInfo',
         data: {
           token: state.token
         },
@@ -216,7 +198,24 @@ const user = {
       //   });
       // });
     },
-
+    async startExperiment({commit, state}, experimentInfo){
+        let resp = await axios({
+          method: 'POST',
+          url: serverUrl + "/startExperiment",
+          data:{
+              account: state.email,
+              waveType: experimentInfo.wave,
+              algorithmType: experimentInfo.algorithm,
+          },
+          transformRequest: [function(data){
+            let ret = '';
+            for (let it in data){
+              ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&';
+            }
+            return ret;
+          }]});
+          return resp;
+    },
     // 第三方验证登录
     LoginByThirdparty({ commit, state }, code) {
       return new Promise((resolve, reject) => {
