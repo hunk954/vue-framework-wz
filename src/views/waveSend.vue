@@ -34,13 +34,18 @@
             <Row>
                 <Card :bordered="false">
                     <p slot="title">实验进程展示</p>
-                    <Steps :current="0" direction="vertical">
-                        <Step title="等待开始" content="等待实验开始中，选择流量与算法类型后点击开始实验即可触发"></Step>
-                        <Step title="启动扩缩容调度算法" content="在流量波形发送前，首先启用扩缩容调度算法的实例以监听服务状态"></Step>
-                        <Step title="发送流量波形" content="发送流量波形到预设的实验负载中，该过程可能会持续1小时"></Step>
-                        <Step title="计算二级指标" content="实验过程中收集的一级指标在实验结束后，计算基于一段时间流量的二级指标"></Step>
-                        <Step title="实验结束" content="单次实验完成"></Step>
-                    </Steps>
+                    <el-steps :active="exprCurrStep" direction="vertical"  finish-status="success">
+                        <el-step v-for="stepInfo in stepInfoList"
+                            :icon="stepInfo.icon"
+                            :status="stepInfo.status">
+                            <template slot="title">
+                                <span style="font-size:14px;">{{stepInfo.title}}</span>
+                            </template>
+                            <template slot="description">
+                                <span style="font-size:5px;">{{stepInfo.desc}}</span>
+                            </template>
+                        </el-step>
+                    </el-steps>
                     <el-button type="warning" icon="el-icon-thumb" size="small">强制终止</el-button>
                 </Card>
             </Row>
@@ -92,7 +97,15 @@
     export default{
         data(){
             return{
+                stepInfoList:[
+                    {title:"等待开始", icon:"", desc:"等待实验开始中，选择流量与算法类型后点击开始实验即可触发", status:""},
+                    {title:"启动扩缩容调度算法", icon:"", desc:"在流量波形发送前，首先启用扩缩容调度算法的实例以监听服务状态", status:""},
+                    {title:"发送流量波形", icon:"", desc:"发送流量波形到预设的实验负载中，该过程可能会持续1小时", status:""},
+                    {title:"计算二级指标", icon:"", desc:"实验过程中收集的一级指标在实验结束后，计算基于一段时间流量的二级指标", status:""},
+                    {title:"实验结束", icon:"", desc:"单次实验完成", status:""},
+                ],
                 startButtonDisabled: false,
+                exprCurrStep: 0,
                 option : {
                     backgroundColor: "#344b58",
                     "title": {
@@ -359,7 +372,22 @@
             }
         },
         methods:{
-            startExperiment(){
+            succStep(index){
+                // 成功index步骤，并使下一个步骤成为等待态
+                this.changeIconStatus(index, "success", "");
+                this.changeIconStatus(index+1);
+                this.exprCurrStep = index+1;
+            },
+            changeIconStatus(index, status="process", icon="el-icon-loading"){
+                this.exprCurrStep = index;
+                if(index >= this.stepInfoList.length){
+                    return;
+                }
+                this.stepInfoList[index].status = status;
+                this.stepInfoList[index].icon = icon;
+            },
+            async startExperiment(){
+                console.log("this.$store.getters: ", this.$store.getters);
                 this.startButtonDisabled = true;
                 console.log("开始实验");
                 console.log("算法类型", this.algorithmValue);
@@ -378,14 +406,33 @@
                     })
                     return;
                 }
+                this.succStep(this.exprCurrStep);
                 let that = this;
-                this.$store.dispatch('startExperiment', {algorithm: this.algorithmValue, wave: this.waveValue}).then(resp=>{
-                    console.log("startExperiment resp: ", resp);
-                    if(resp.data.status === 0){
-                        
+                let resp = await this.$store.dispatch('startExperiment', {algorithm: this.algorithmValue, wave: this.waveValue});
+                if(resp.data.status !== 0){
+                    console.log("start failed!", resp)
+                    return;
+                }
+                while(true){
+                    resp = await this.$store.dispatch('getCurrExperStatus',this.$store.getters.name);
+                    console.log("get status resp:", resp);
+                    if(resp.data.status == 0){
+                        this.succStep(resp.data.data-1);
+                        if(resp.data.data >= this.stepInfoList.length-1){
+                            this.succStep(resp.data.data);
+                            break;
+                        }
+                        resp = await this.$store.dispatch("sleepBackEnd", 5);
+                        if(resp.data.status != 0){
+                            break;
+                        }
+                        console.log("sleep resp: ", resp);
+                    }else{
+                        break;
                     }
-                    that.startButtonDisabled = false;
-                })
+                }
+                this.startButtonDisabled = false;
+                
             }
         }   
     }

@@ -199,11 +199,12 @@ const user = {
       // });
     },
     async startExperiment({commit, state}, experimentInfo){
+      console.log("State: ", state.name);
         let resp = await axios({
           method: 'POST',
           url: serverUrl + "/startExperiment",
           data:{
-              account: state.email,
+              account: state.name,
               waveType: experimentInfo.wave,
               algorithmType: experimentInfo.algorithm,
           },
@@ -216,6 +217,41 @@ const user = {
           }]});
           return resp;
     },
+    async getCurrExperStatus({commit, state}, account){
+      console.log("getcurr account: ", account);
+      let resp = await axios({
+        method: 'POST',
+        url: serverUrl + "/getCurrExperStatus",
+        data:{
+          account: account
+        },
+        transformRequest: [function(data){
+          let ret = '';
+          for (let it in data){
+            ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&';
+          }
+          return ret;
+        }]});
+        return resp;
+    },
+    async sleepBackEnd({commit, state}, second){
+      console.log("start sleepbackend: ", second);
+      let resp = await axios({
+        method: 'GET',
+        url: serverUrl + "/sleep",
+        params:{
+          time: second
+        },
+        transformRequest: [function(data){
+          let ret = '';
+          for (let it in data){
+            ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&';
+          }
+          return ret;
+        }]});
+        return resp;
+    },
+
     // 第三方验证登录
     LoginByThirdparty({ commit, state }, code) {
       return new Promise((resolve, reject) => {
