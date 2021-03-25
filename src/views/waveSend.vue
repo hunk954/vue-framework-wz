@@ -33,6 +33,7 @@
             <div style="margin:20px;"></div>
             <Row>
                 <Card :bordered="false">
+                
                     <p slot="title">实验进程展示</p>
                     <el-steps :active="exprCurrStep" direction="vertical"  finish-status="success">
                         <el-step v-for="stepInfo in stepInfoList"
@@ -46,32 +47,22 @@
                             </template>
                         </el-step>
                     </el-steps>
-                    <el-button type="warning" icon="el-icon-thumb" size="small">强制终止</el-button>
+                    <el-button type="warning" icon="el-icon-thumb" size="small" @click="forceStopFunc">强制终止</el-button>
+                
+            
                 </Card>
             </Row>
         </Col>
         <Col span="1"><div style="margin:5px;"></div></Col>
         <Col span="16">
             <Card :bordered="false">
-                <p slot="title">当前实验一级指标展示</p>
-                <Row>
-                    <Col span="12">
-                        <chart :options="option" style="height:400px; width:95%; border-radius: 25px;"></chart>
-                    </Col>
-                    <Col span="12">
-                        <chart :options="option" style="height:400px; width:95%; border-radius: 25px;"></chart>
-                    </Col>
-                </Row>
-                <div style="margin:20px;"></div>
-                <Row>
-                    <Col span="12">
-                        <chart :options="option" style="height:400px; width:95%; border-radius: 25px;"></chart>
-                    </Col>
-                    <Col span="12">
-                        <chart :options="option" style="height:400px; width:95%; border-radius: 25px;"></chart>
-                    </Col>
-                </Row>
-
+            <p slot="title">当前实验一级指标展示</p>
+            <div v-if="experimentInProcess">
+                <iframe src="http://172.16.33.50:30000/d/rmdIER8Gk/cproductpage?orgId=1&from=1616675574281&to=1616675874281&refresh=5s&theme=light" style="width:100%;height:600px"></iframe>
+            </div>
+            <div v-else>
+            <p>暂无实验进行中</p>
+             </div>
             </Card>
         </Col>
     </div>
@@ -97,6 +88,7 @@
     export default{
         data(){
             return{
+                forceStop: false,
                 stepInfoList:[
                     {title:"等待开始", icon:"", desc:"等待实验开始中，选择流量与算法类型后点击开始实验即可触发", status:""},
                     {title:"启动扩缩容调度算法", icon:"", desc:"在流量波形发送前，首先启用扩缩容调度算法的实例以监听服务状态", status:""},
@@ -106,6 +98,7 @@
                 ],
                 startButtonDisabled: false,
                 exprCurrStep: 0,
+                experimentInProcess: false,
                 option : {
                     backgroundColor: "#344b58",
                     "title": {
@@ -372,6 +365,22 @@
             }
         },
         methods:{
+            async forceStopFunc(){
+                this.forceStop = true;
+                await this.$store.dispatch("forceStopFunc");
+            },
+            resetExperStepInfo(){
+                for(let i = 0; i < this.stepInfoList.length; i++){
+                    this.stepInfoList[i].icon = "";
+                    this.stepInfoList[i].status = "process";
+                }
+                this.exprCurrStep = 0;
+                this.forceStop = false;
+                console.log("after reset:", this.stepInfoList)
+            },
+            failStep(index){
+                this.changeIconStatus(index, "error", "");
+            },
             succStep(index){
                 // 成功index步骤，并使下一个步骤成为等待态
                 this.changeIconStatus(index, "success", "");
@@ -387,7 +396,8 @@
                 this.stepInfoList[index].icon = icon;
             },
             async startExperiment(){
-                console.log("this.$store.getters: ", this.$store.getters);
+                // 重置实验步骤信息
+                this.resetExperStepInfo();
                 this.startButtonDisabled = true;
                 console.log("开始实验");
                 console.log("算法类型", this.algorithmValue);
@@ -414,19 +424,34 @@
                     return;
                 }
                 while(true){
+                    if(this.forceStop){
+                        this.failStep(this.exprCurrStep);
+                        break;
+                    }
                     resp = await this.$store.dispatch('getCurrExperStatus',this.$store.getters.name);
                     console.log("get status resp:", resp);
                     if(resp.data.status == 0){
-                        this.succStep(resp.data.data-1);
-                        if(resp.data.data >= this.stepInfoList.length-1){
-                            this.succStep(resp.data.data);
+                        if(resp.data.data == 5){
+                            this.failStep(this.exprCurrStep);
                             break;
                         }
-                        resp = await this.$store.dispatch("sleepBackEnd", 5);
-                        if(resp.data.status != 0){
-                            break;
+                        else{
+                            this.succStep(resp.data.data-1);
+                            if(resp.data.data == 2){
+                                this.experimentInProcess = true;
+                            }
+                            if(resp.data.data >= this.stepInfoList.length-1){
+                                // 最后的
+                                this.succStep(resp.data.data);
+                                break;
+                            }
+                            // 轮询
+                            resp = await this.$store.dispatch("sleepBackEnd", 1);
+                            if(resp.data.status != 0){
+                                break;
+                            }
+                            // console.log("sleep resp: ", resp);
                         }
-                        console.log("sleep resp: ", resp);
                     }else{
                         break;
                     }

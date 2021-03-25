@@ -251,7 +251,19 @@ const user = {
         }]});
         return resp;
     },
-
+    async forceStopFunc({commit, state}){
+      let resp = await axios({
+        method: 'GET',
+        url: serverUrl + "/shutDownExperiment",
+        transformRequest: [function(data){
+          let ret = '';
+          for (let it in data){
+            ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&';
+          }
+          return ret;
+        }]});
+        return resp;
+    },
     // 第三方验证登录
     LoginByThirdparty({ commit, state }, code) {
       return new Promise((resolve, reject) => {
