@@ -15,6 +15,7 @@ const user = {
     auth_type: '',
     token: Cookies.get('Admin-Token'),
     name: '',
+    currExperID: '',
     roles: [],
     setting: {
       articlePlatform: []
@@ -48,6 +49,9 @@ const user = {
     },
     SET_ROLES: (state, roles) => {
       state.roles = roles;
+    },
+    SET_CURREXPERID: (state, currExperID) =>{
+      state.currExperID = currExperID;
     },
     LOGIN_SUCCESS: () => {
       console.log('login success')
@@ -182,6 +186,8 @@ const user = {
         commit('SET_ROLES', ["admin"]);
         commit('SET_NAME', data.name);
         commit('SET_UID', data.uid);
+        commit('SET_CURREXPERID', data.currExperimentID);
+        commit('SET_EMAIL', data.email);
       }
       return resp;
       // return new Promise((resolve, reject) => {
@@ -215,6 +221,7 @@ const user = {
             }
             return ret;
           }]});
+          commit('SET_CURREXPERID', resp.data.exprID);
           return resp;
     },
     async getCurrExperStatus({commit, state}, account){
@@ -255,6 +262,27 @@ const user = {
       let resp = await axios({
         method: 'GET',
         url: serverUrl + "/shutDownExperiment",
+        params:{
+          uid: state.uid,
+          experID: state.currExperID,
+        },
+        transformRequest: [function(data){
+          let ret = '';
+          for (let it in data){
+            ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&';
+          }
+          return ret;
+        }]});
+        return resp;
+    },
+    async getCurrExperData({commit, state}){
+      let resp = await axios({
+        method: 'GET',
+        url: serverUrl + "/getCurrExperData",
+        params:{
+          uid: state.uid,
+          experID: state.currExperID,
+        },
         transformRequest: [function(data){
           let ret = '';
           for (let it in data){

@@ -2,7 +2,7 @@
   <Row>
 
   <Col :span="24">
-    <chart :options="option" class="echarts"></chart>
+     <iframe src="http://172.16.33.50:30000/d/rmdIER8Gk/cproductpage?orgId=1&from=1616675574281&to=1616675874281&refresh=5s&theme=dark" style="width:100%;height:600px"></iframe>
 
   </Col>
 

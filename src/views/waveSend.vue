@@ -1,11 +1,11 @@
 <template>
     <div class="animated fadeIn" style="background:#eee; padding:20px;">
-        <Col span="6">
-            <Row>
+        <Row :gutter="16">
+            <Col span="6">
                 <Card :bordered="false">
                     <p slot="title">实验参数设置</p>
                     <p>扩缩容算法类型</p>
-                    <el-select v-model="algorithmValue" placeholder="请选择扩缩容算法" size="small" filterable clearable>
+                    <el-select v-model="algorithmValue" placeholder="请选择扩缩容算法" size="small" filterable clearable :disabled="buttonDisabled">
                         <el-option
                                 v-for="item in algorithmList"
                                 :key="item.value"
@@ -15,7 +15,7 @@
                     </el-select>
                     <div style="margin:20px;"></div>
                     <p>流量类型</p>
-                    <el-select v-model="waveValue" placeholder="请选择流量类型" size="small" filterable clearable>
+                    <el-select v-model="waveValue" placeholder="请选择流量类型" size="small" filterable clearable :disabled="buttonDisabled">
                         <el-option
                                 v-for="item in waveList"
                                 :key="item.value"
@@ -27,44 +27,43 @@
                     <el-button type="primary" icon="el-icon-thumb" size="small" @click="startExperiment" :disabled="startButtonDisabled">开始实验</el-button>
                     <!-- <p>Content of no border type. Content of no border type. Content of no border type. Content of no border type. </p> -->
                 </Card>
-                <!-- <h3>选择流量类型</h3>
-                <h3>选择扩缩容算法类型</h3> -->
-            </Row>
-            <div style="margin:20px;"></div>
-            <Row>
+            </Col>
+            
+            <!-- <div style="margin:10px;"></div> -->
+            <Col span="18">
                 <Card :bordered="false">
-                
                     <p slot="title">实验进程展示</p>
-                    <el-steps :active="exprCurrStep" direction="vertical"  finish-status="success">
-                        <el-step v-for="stepInfo in stepInfoList"
-                            :icon="stepInfo.icon"
-                            :status="stepInfo.status">
+                    <el-steps :active="exprCurrStep" finish-status="success">
+                        <el-step v-for="stepInfo in stepInfoList" :icon="stepInfo.icon" :status="stepInfo.status">
                             <template slot="title">
                                 <span style="font-size:14px;">{{stepInfo.title}}</span>
                             </template>
                             <template slot="description">
                                 <span style="font-size:5px;">{{stepInfo.desc}}</span>
+                                <p style="font-size:5px;color:blue;" v-if="stepInfo.needTimeDesc">{{stepInfo.timeDesc + stepInfo.time}}</p>
                             </template>
                         </el-step>
                     </el-steps>
+                    <br>
                     <el-button type="warning" icon="el-icon-thumb" size="small" @click="forceStopFunc">强制终止</el-button>
                 
             
                 </Card>
-            </Row>
-        </Col>
-        <Col span="1"><div style="margin:5px;"></div></Col>
-        <Col span="16">
+            </Col>
+        </Row>
+        <br>
+        <!-- <Col span="1"><div style="margin:5px;"></div></Col> -->
+        <Row>
             <Card :bordered="false">
             <p slot="title">当前实验一级指标展示</p>
             <div v-if="experimentInProcess">
-                <iframe src="http://172.16.33.50:30000/d/rmdIER8Gk/cproductpage?orgId=1&from=1616675574281&to=1616675874281&refresh=5s&theme=light" style="width:100%;height:600px"></iframe>
+                <iframe src="http://172.16.33.50:30000/d/rmdIER8Gk/cproductpage?orgId=1&from=1616675574281&to=1616675874281&refresh=5s&theme=dark" style="width:100%;height:600px"></iframe>
             </div>
             <div v-else>
             <p>暂无实验进行中</p>
              </div>
             </Card>
-        </Col>
+        </Row>
     </div>
 </template>
 
@@ -89,16 +88,22 @@
         data(){
             return{
                 forceStop: false,
-                stepInfoList:[
-                    {title:"等待开始", icon:"", desc:"等待实验开始中，选择流量与算法类型后点击开始实验即可触发", status:""},
-                    {title:"启动扩缩容调度算法", icon:"", desc:"在流量波形发送前，首先启用扩缩容调度算法的实例以监听服务状态", status:""},
-                    {title:"发送流量波形", icon:"", desc:"发送流量波形到预设的实验负载中，该过程可能会持续1小时", status:""},
-                    {title:"计算二级指标", icon:"", desc:"实验过程中收集的一级指标在实验结束后，计算基于一段时间流量的二级指标", status:""},
+                algorithmIdx: 1,
+                waveIdx: 2,
+                secondStateIdx: 3,
+                commonEndIdx: 4,
+                exceptionIdx: 5,
+                stepInfoList:[  
+                    {title:"等待开始", icon:"", desc:"等待实验开始中，选择流量与算法类型后点击开始实验即可触发", status:"", needTimeDesc:false, timeDesc:"", time:""},
+                    {title:"启动扩缩容调度算法", icon:"", desc:"在流量波形发送前，首先启用扩缩容调度算法的实例以监听服务状态", status:"", needTimeDesc:false, timeDesc:"", time:""},
+                    {title:"发送流量波形", icon:"", desc:"发送流量波形到预设的实验负载中，该过程可能会持续1小时", status:"", needTimeDesc:false, timeDesc:"已耗时：", time:""},
+                    {title:"计算二级指标", icon:"", desc:"实验过程中收集的一级指标在实验结束后，计算基于一段时间流量的二级指标", status:"", needTimeDesc:false, timeDesc:"", time:""},
                     {title:"实验结束", icon:"", desc:"单次实验完成", status:""},
                 ],
                 startButtonDisabled: false,
                 exprCurrStep: 0,
                 experimentInProcess: false,
+                buttonDisabled: false,
                 option : {
                     backgroundColor: "#344b58",
                     "title": {
@@ -367,6 +372,8 @@
         methods:{
             async forceStopFunc(){
                 this.forceStop = true;
+                this.buttonDisabled = false;
+                this.startButtonDisabled = false;
                 await this.$store.dispatch("forceStopFunc");
             },
             resetExperStepInfo(){
@@ -374,34 +381,97 @@
                     this.stepInfoList[i].icon = "";
                     this.stepInfoList[i].status = "process";
                 }
-                this.exprCurrStep = 0;
-                this.forceStop = false;
-                console.log("after reset:", this.stepInfoList)
+                this.exprCurrStep = 0; // 步骤状态设置为0
+                this.forceStop = false; // 取消强制停止态
+                this.stepInfoList[this.waveIdx].needTimeDesc = false; // 将时间展示去掉
             },
             failStep(index){
                 this.changeIconStatus(index, "error", "");
             },
-            succStep(index){
+            reachStep(index){
+                for(let i = 0; i < index; i++){
+                    this.changeIconStatus(i, "success", "");
+                }
                 // 成功index步骤，并使下一个步骤成为等待态
-                this.changeIconStatus(index, "success", "");
-                this.changeIconStatus(index+1);
-                this.exprCurrStep = index+1;
+                this.changeIconStatus(index);
+                this.exprCurrStep = index;
             },
             changeIconStatus(index, status="process", icon="el-icon-loading"){
-                this.exprCurrStep = index;
+                // this.exprCurrStep = index;
                 if(index >= this.stepInfoList.length){
                     return;
                 }
                 this.stepInfoList[index].status = status;
                 this.stepInfoList[index].icon = icon;
             },
+            processTimeDisplay(timeTmp){
+                 if(timeTmp < 60){
+                    this.stepInfoList[this.waveIdx].time = Math.floor(timeTmp) + "秒" + ((timeTmp - Math.floor(timeTmp))*100).toPrecision(2);
+                }else if(timeTmp < 60*60){
+                    timeTmp = Math.floor(timeTmp);
+                    this.stepInfoList[this.waveIdx].time = Math.floor(timeTmp/60) + "分" + Math.floor(timeTmp%60) + "秒";
+                }else{
+                    timeTmp = Math.floor(timeTmp);
+                    this.stepInfoList[this.waveIdx].time = Math.floor(timeTmp/3600) + "时" + Math.floor(timeTmp%3600/60) + "分" +  Math.floor(timeTmp%3600%60) + "秒";
+                }
+            },
+            async doExperiment(start=0){
+
+                this.buttonDisabled = true;
+                let resp
+                while(true){
+                    // 如果强制停止就直接停止
+                    if(this.forceStop){
+                        this.failStep(this.exprCurrStep);
+                        break;
+                    }
+                    // 获取状态
+                    resp = await this.$store.dispatch('getCurrExperStatus',this.$store.getters.name);
+                    
+                    // status为0表示网络是通的
+                    if(resp.data.status == 0){
+                        if(resp.data.data >= this.exceptionIdx){
+                            // 如果传来的状态大于ExceptionIdx就是异常了
+                            this.failStep(this.exprCurrStep);
+                            break;
+                        }
+                        else{
+                            // 否则的话就是当前在resp.data.data状态
+                            if(resp.data.data != this.exprCurrStep){
+                                start = (new Date()).valueOf();
+                            }
+                            this.reachStep(resp.data.data);
+                            
+                            // 如果是在流量发送态，展现流程图
+                            if(resp.data.data == this.waveIdx){
+                                this.stepInfoList[this.waveIdx].needTimeDesc = true;
+                                let timeTmp = ((new Date()).valueOf() - start)/1000;
+                                this.processTimeDisplay(timeTmp);
+                                this.experimentInProcess = true;
+                            }
+                            // 如果是在结束状态需要break
+                            if(resp.data.data == this.commonEndIdx){
+                                this.reachStep(resp.data.data+1);
+                                break;
+                            }
+                            // 其他状态就等待一秒
+                            resp = await this.$store.dispatch("sleepBackEnd", 1);
+                            if(resp.data.status != 0){
+                                break;
+                            }
+                        }
+                    }else{
+                        break;
+                    }
+                }
+                this.startButtonDisabled = false;
+                this.buttonDisabled = false;
+            },
             async startExperiment(){
                 // 重置实验步骤信息
                 this.resetExperStepInfo();
-                this.startButtonDisabled = true;
-                console.log("开始实验");
-                console.log("算法类型", this.algorithmValue);
-                console.log("流量类型", this.waveValue);
+                
+                // 检验参数是否正确
                 if(this.algorithmValue === ""){
                     this.$message({
                         type: "error",
@@ -416,49 +486,49 @@
                     })
                     return;
                 }
-                this.succStep(this.exprCurrStep);
+                // 置开始实验为禁用
+                this.startButtonDisabled = true;
+                this.buttonDisabled = true;
+                // 开启实验进程
                 let that = this;
                 let resp = await this.$store.dispatch('startExperiment', {algorithm: this.algorithmValue, wave: this.waveValue});
                 if(resp.data.status !== 0){
                     console.log("start failed!", resp)
+                    this.failStep(this.exprCurrStep);
                     return;
                 }
-                while(true){
-                    if(this.forceStop){
-                        this.failStep(this.exprCurrStep);
-                        break;
-                    }
-                    resp = await this.$store.dispatch('getCurrExperStatus',this.$store.getters.name);
-                    console.log("get status resp:", resp);
-                    if(resp.data.status == 0){
-                        if(resp.data.data == 5){
-                            this.failStep(this.exprCurrStep);
-                            break;
-                        }
-                        else{
-                            this.succStep(resp.data.data-1);
-                            if(resp.data.data == 2){
-                                this.experimentInProcess = true;
-                            }
-                            if(resp.data.data >= this.stepInfoList.length-1){
-                                // 最后的
-                                this.succStep(resp.data.data);
-                                break;
-                            }
-                            // 轮询
-                            resp = await this.$store.dispatch("sleepBackEnd", 1);
-                            if(resp.data.status != 0){
-                                break;
-                            }
-                            // console.log("sleep resp: ", resp);
-                        }
-                    }else{
-                        break;
-                    }
-                }
-                this.startButtonDisabled = false;
+                let start = 0;
+                this.doExperiment();
                 
+                
+            },
+            async recoverExperiment(algo, wave, status, time){
+                this.startButtonDisabled = true;
+                this.algorithmValue = algo;
+                this.waveValue = wave;
+                this.reachStep(status);
+                if(status >= this.waveIdx){
+                    if(status == this.waveIdx){
+                        this.experimentInProcess = true;
+                    }
+                    this.stepInfoList[this.waveIdx].needTimeDesc = true;
+                    let timeTmp = ((new Date()).valueOf()/1000 - time);
+                    this.processTimeDisplay(timeTmp);
+                }
+                await this.doExperiment(time*1000);
             }
-        }   
+        },
+        created: async function(){
+            // 获取当前用户的实验ID
+            let resp = await this.$store.dispatch('getCurrExperStatus',this.$store.getters.name);
+            if(resp.data.data < this.commonEndIdx){
+                resp = await this.$store.dispatch('getCurrExperData');
+                console.log("resp:::::", resp);
+                if(resp.data.status === 0 && resp.data.experStatus > 0 && resp.data.experStatus <= this.commonEndIdx){
+                    this.recoverExperiment(resp.data.algo, resp.data.wave, resp.data.experStatus, resp.data.lastUpdateTime);
+                }
+            }
+            
+        }
     }
 </script>

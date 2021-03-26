@@ -2,22 +2,36 @@
   <aside class="aside-menu px-4">
     <div class="aside-options">
       <div class="clearfix mt-4">
-        <h6><b>待办事项 1</b>  <i-switch class="float-right">
+        <!-- <h6><b>待办事项 1</b>  <i-switch class="float-right">
         <span slot="open">开</span>
         <span slot="close">关</span>
-    </i-switch></h6>
+    </i-switch></h6> -->
    
       </div>
-      <div>
+      <!-- <div>
         <p class="text-muted">明天提醒我吃黄焖鸡</p>
-      </div>
+      </div> -->
 
 
     </div>
    
-    <hr>
-    <h6>系统利用率</h6>
-
+    <!-- <hr> -->
+    <h6>用户信息</h6>
+    <br>
+  <hr>
+  <br>
+    <el-form ref="form" :model="form">
+      <el-form-item label="UID">
+        <el-input v-model="form.uid" :disabled="true"></el-input>
+      </el-form-item>
+      <el-form-item label="Email">
+        <el-input v-model="form.email" :disabled="true"></el-input>
+      </el-form-item>
+      <el-form-item label="最近一次实验ID">
+        <el-input v-model="form.currExperID" :disabled="true"></el-input>
+      </el-form-item>
+    </el-form>
+<!-- 
       <i-circle
         :size="200"
         :trail-width="4"
@@ -50,12 +64,21 @@
     <div class="text-uppercase mb-1 mt-2"><small><b>SSD  Usage</b></small></div>
      <Progress :percent="25" :stroke-width="7" status="success"></Progress>
 
-    <small class="text-muted">25GB/256GB</small>
+    <small class="text-muted">25GB/256GB</small> -->
   </aside>
 </template>
 
 <script>
 export default {
+  data(){
+    return{
+      form:{
+        uid: this.$store.getters.uid,
+        email: this.$store.getters.email,
+        currExperID: this.$store.getters.currExperID,
+      }
+    }
+  },
   name: 'aside'
 }
 </script>
